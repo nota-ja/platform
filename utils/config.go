@@ -267,6 +267,23 @@ func LoadConfig(fileName string) {
 		} else {
 			fmt.Println("Error in parseDatabaseUrl:" + err.Error() + "; Skipped")
 		}
+	} else if vcapServices := os.Getenv("VCAP_SERVICES"); vcapServices != "" {
+		// Reconfigure RDBMS connection if env 'VCAP_SERVICES' is set
+		fmt.Printf("VCAP_SERVICES: '%s'\n", vcapServices)
+		if uri, err := getUriFromVcapServices(vcapServices); err == nil {
+			driver, dsn, err := parseDatabaseUrl(uri)
+			if err == nil {
+				Cfg.SqlSettings.DriverName, Cfg.SqlSettings.DataSource = driver, dsn
+				fmt.Printf("Cfg.SqlSettings.DriverName: '%s'\n", Cfg.SqlSettings.DriverName)
+				fmt.Printf("Cfg.SqlSettings.DataSource: '%s'\n", Cfg.SqlSettings.DataSource)
+				Cfg.SqlSettings.DataSourceReplicas = []string{dsn}
+				fmt.Printf("Cfg.SqlSettings.DataSourceReplicas: '%s'\n", Cfg.SqlSettings.DataSourceReplicas)
+			} else {
+				fmt.Println("Error in parseDatabaseUrl:" + err.Error() + "; Skipped")
+			}
+		} else {
+			fmt.Println("Error in getUriFromVcapServices:" + err.Error() + "; Skipped")
+		}
 	}
 }
 
@@ -297,6 +314,50 @@ func parseDatabaseUrl(databaseUrl string) (driver string, dsn string, err error)
 	}
 
 	return driver, dsn, nil
+}
+
+func getUriFromVcapServices(vcapServices string) (string, error) {
+	svcsbytes := []byte(vcapServices)
+	var svcsif interface{}
+	if err := json.Unmarshal(svcsbytes, &svcsif); err != nil {
+		return "", fmt.Errorf("Bad JSON in VCAP_SERVICES:'%s'", vcapServices)
+	}
+
+	// just skip if error because there may be config in file
+	svcs, ok := svcsif.(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("Unknown Format in VCAP_SERVICES:'%s'", vcapServices)
+	}
+	for _, val := range svcs {
+		// val shoul be an array
+		svcarr, ok := val.([]interface{})
+		if !ok {
+			return "", fmt.Errorf("Unknown Format in VCAP_SERVICES:'%s'", vcapServices)
+		}
+		svc0 := []byte(fmt.Sprint(svcarr[0]))
+		if ok {
+			return "", fmt.Errorf("Unknown Format in VCAP_SERVICES:'%s'", vcapServices)
+		}
+		fmt.Printf("svcarr[0]:'%s'\n", svc0)
+		type serviceBinding struct {
+			Credentials struct {
+				Uri string `json:"uri"`
+			} `json:"credentials"`
+			Label string        `json:"label"`
+			Name  string        `json:"name"`
+			Plan  string        `json:"plan"`
+			Tags  []interface{} `json:"tags"`
+		}
+		var svcbind serviceBinding
+		if err := json.Unmarshal(svc0, &svcbind); err != nil {
+			return "", fmt.Errorf("Unknown Format in VCAP_SERVICES:'%s'", vcapServices)
+		}
+		if svcbind.Credentials.Uri == "" {
+			return "", fmt.Errorf("No '[credentials][uri]' in VCAP_SERVICES:'%s'", vcapServices)
+		}
+		return svcbind.Credentials.Uri, nil
+	}
+	return "", fmt.Errorf("Something wrong in parseDatabaseUrl")
 }
 
 func getSanitizeOptions() map[string]bool {
