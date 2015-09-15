@@ -10,6 +10,10 @@ sed --in-place=.0 's/^#!\/usr\/bin\/nodejs/#!\/usr\/bin\/env nodejs/g' .apt/usr/
 sed --in-place=.01 's/require("\.\.\/lib/require("..\/share\/npm\/lib/g' .apt/usr/bin/npm
 sed --in-place=.0 "s/\/usr\/share\/node-mime/\/home\/vcap\/app\/.apt\/usr\/share\/node-mime/g" .apt/usr/lib/nodejs/mime.js
 
+pushd $HOME/.apt/usr/bin
+ln -s nodejs node
+popd
+
 echo starting react processor
 pushd web/react
 npm start &
