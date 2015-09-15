@@ -25,7 +25,7 @@ popd
 
 echo starting react processor
 pushd web/react
-npm start &
+NODE_PATH=$HOME/.apt/usr/lib/nodejs:$HOME/.apt/usr/share/npm/node_modules:$PWD/node_modules npm start &
 popd
 
 # echo starting compass watch
