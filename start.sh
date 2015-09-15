@@ -2,6 +2,8 @@
 
 set -x
 
+source .profile.d/000_apt.sh
+
 mkdir -p web/static/js
 
 echo starting react processor
