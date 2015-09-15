@@ -245,6 +245,11 @@ func LoadConfig(fileName string) {
 	if err := CheckMailSettings(); err != nil {
 		l4g.Error("Email settings are not valid err=%v", err)
 	}
+
+	// Reconfigure Port if environment variable 'PORT' is set
+	if port := os.Getenv("PORT"); port != "" {
+		Cfg.ServiceSettings.Port = port
+	}
 }
 
 func getSanitizeOptions() map[string]bool {
