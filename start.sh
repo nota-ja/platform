@@ -14,6 +14,15 @@ pushd $HOME/.apt/usr/bin
 ln -s nodejs node
 popd
 
+pushd web/react/node_modules/.bin
+ln -s ../browserify/bin/cmd.js browserify
+ln -s ../envify/bin/envify envify
+ln -s ../eslint/bin/eslint.js eslint
+ln -s ../jest-cli/bin/jest.js jest
+ln -s ../uglify-js/bin/uglifyjs uglifyjs
+ln -s ../watchify/bin/cmd.js watchify
+popd
+
 echo starting react processor
 pushd web/react
 npm start &
