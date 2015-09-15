@@ -9,6 +9,9 @@ import (
 	"net/mail"
 	"os"
 	"path/filepath"
+
+	"fmt"
+	"net/url"
 )
 
 const (
@@ -250,6 +253,50 @@ func LoadConfig(fileName string) {
 	if port := os.Getenv("PORT"); port != "" {
 		Cfg.ServiceSettings.Port = port
 	}
+
+	if databaseUrl := os.Getenv("DATABASE_URL"); databaseUrl != "" {
+		// Reconfigure RDBMS connection if env 'DATABASE_URL' is set
+		fmt.Printf("DATABASE_URL: '%s'\n", databaseUrl)
+		driver, dsn, err := parseDatabaseUrl(databaseUrl)
+		if err == nil {
+			Cfg.SqlSettings.DriverName, Cfg.SqlSettings.DataSource = driver, dsn
+			fmt.Printf("Cfg.SqlSettings.DriverName: '%s'\n", Cfg.SqlSettings.DriverName)
+			fmt.Printf("Cfg.SqlSettings.DataSource: '%s'\n", Cfg.SqlSettings.DataSource)
+			Cfg.SqlSettings.DataSourceReplicas = []string{dsn}
+			fmt.Printf("Cfg.SqlSettings.DataSourceReplicas: '%s'\n", Cfg.SqlSettings.DataSourceReplicas)
+		} else {
+			fmt.Println("Error in parseDatabaseUrl:" + err.Error() + "; Skipped")
+		}
+	}
+}
+
+func parseDatabaseUrl(databaseUrl string) (driver string, dsn string, err error) {
+	uri, err := url.Parse(databaseUrl)
+	if err != nil {
+		return "", "", err
+	}
+	driver = uri.Scheme
+	if driver == "mysql2" {
+		// This is a fix for very ugly Ruby on Rails dependency in Cloud Foundry
+		driver = "mysql"
+	}
+	// unix domain socket is out of scope
+	dsn = fmt.Sprintf("%s@tcp(%s)%s", uri.User.String(), uri.Host, uri.Path)
+	if uri.RawQuery != "" {
+		query := uri.Query()
+		for key, _ := range query {
+			if key == "reconnect" {
+				// "reconnect" is not a MySQL server variable
+				// cf. https://dev.mysql.com/doc/refman/5.7/en/server-system-variables.html
+				query.Del(key)
+			}
+		}
+		if len(query) > 0 {
+			dsn = fmt.Sprintf("%s?%s", dsn, query.Encode())
+		}
+	}
+
+	return driver, dsn, nil
 }
 
 func getSanitizeOptions() map[string]bool {
