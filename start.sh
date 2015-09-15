@@ -17,4 +17,5 @@ popd
 # popd
 
 echo starting go web server
+source .profile.d/go.sh
 platform -config config/config.json || nc -l -k $PORT
