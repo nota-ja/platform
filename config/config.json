@@ -59,13 +59,14 @@
         "InitialFont": "luximbi.ttf"
     },
     "EmailSettings": {
-        "ByPassEmail" : true,
-        "SMTPUsername": "",
-        "SMTPPassword": "",
-        "SMTPServer": "",
-		"UseTLS": false,
-        "FeedbackEmail": "",
-        "FeedbackName": "",
+        "ByPassEmail" : false,
+        "SMTPUsername": "YOUR-GMAIL-ACCOUNT",
+        "SMTPPassword": "YOUR-GMAIL-PASSWORD",
+        "SMTPServer": "smtp.gmail.com:465",
+        "UseTLS": true,
+        "UseStartTLS": false,
+        "FeedbackEmail": "YOUR-GMAIL-ACCOUNT@gmail.com",
+        "FeedbackName": "cf100 mattermost",
         "ApplePushServer": "",
         "ApplePushCertPublic": "",
         "ApplePushCertPrivate": ""
